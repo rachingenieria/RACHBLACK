@@ -11,9 +11,9 @@ void Turbina_Init(int pint)
   
   myservo.write(180);
   delay(1000);
-  myservo.write(0);
-  delay(1000);
   myservo.write(90);
+  delay(1000);
+  myservo.write(0);
   delay(1000);
 }
 

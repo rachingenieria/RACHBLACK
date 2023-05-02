@@ -60,10 +60,10 @@ TaskHandle_t Task2;
 //PARAMETROS del Control del Velocista
 //AQUI SE MODIFICAN LOS PARAMETROS DE COMPETENCIA
 //VALORES DE CONTROL POR DEFECTO
-int   VELCIDAD_MAXIMA        = 20;       //Velocidad Maxima (entre 0 y 100)
+int   VELCIDAD_MAXIMA        = 36;       //Velocidad Maxima (entre 0 y 100)
 int   CTE_PROPORCIONAL       = 8;      //Constante de Control Proporcional (ente 1 y 20)
 int   CTE_DERIVATIVA         = 32;      //Constante de Control Diferencia (ente 1 y 20)
-int   V_TURBINA              = 60;//35;      //Constante Turbina (ente 0 y 100)                                                                                                                                                                                                                  
+int   V_TURBINA              = 35;//35;      //Constante Turbina (ente 0 y 100)                                                                                                                                                                                                                  
 int   PISTACOLOR             = 0;
 
 //------------------------------------------------------------------------------------//
@@ -104,7 +104,7 @@ void setup()
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   pixels.clear(); // Set all pixel colors to 'off'
   
-  SerialBT.begin("RACHBLACK");
+  SerialBT.begin("ZOOMER");
   
   pinMode(SW1,INPUT_PULLUP);
   
@@ -118,9 +118,6 @@ void setup()
   motor.SetSpeeds(0,0);
   
   Turbina_Init(TURBINA_PIN);
-  Turbina_set(60);
-  delay(1000);
-  Turbina_set(50);
 
   Eeprom_read();
   Serial.printf("vel.ver %d, vel.vavg %d, vel.kpg %d, vel.kdg %d, vel.colorlinea %d, vel.pmw_t %d\n",vel.ver, vel.vavg, vel.kpg, vel.kdg, vel.colorlinea, vel.pmw_t);
@@ -345,7 +342,7 @@ void loop()
    if (rf_control == 0 && stat_sw == 0)
    {
        motor.SetSpeeds(0, 0);
-       Turbina_set(50);
+       Turbina_set( 0);
        while(1)
        {
           Led_Control(0,0,0,150,0,0);
