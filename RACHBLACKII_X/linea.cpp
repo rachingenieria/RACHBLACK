@@ -180,16 +180,18 @@ int slinea::Leer_linea(int linea_anterior, int colorlinea )
      else
      {
          
-          if(linea_anterior > 15)
+          if(linea_anterior >= 10)
           {
             linea = 45;
           }
-          else if(linea_anterior < -15)
+          else if(linea_anterior <= -10)
           {
             linea = -45;
           }
           else
-          {linea = 0;}
+          {
+            linea = 0;
+            }
      
      }
      return linea;
