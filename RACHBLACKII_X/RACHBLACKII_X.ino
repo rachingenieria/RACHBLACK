@@ -1,5 +1,8 @@
 #include <Adafruit_NeoPixel.h>
 
+#include "Wire.h"
+#include <Adafruit_MPU6050.h>
+
 #include "BluetoothSerial.h"
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
@@ -11,6 +14,7 @@
 #include "api.h"
 #include "rachblack.h"
 #include "turbina.h"
+#include "ACC.h"
 
 #define FIRMWARE_VERSION     23 
 
@@ -30,15 +34,18 @@ BluetoothSerial SerialBT;
 
 //Sensores
 //unsigned char sensorline_pins[NUM_SENSORS] = {23,21,22,19,32,33,26,15}; // SENSORES DEL 0 AL 8 QTR8
-unsigned char sensorline_pins[NUM_SENSORS] = {15,26,33,32,19,22,21,23}; // SENSORES DEL 0 AL 8 QTR8
+unsigned char sensorline_pins[NUM_SENSORS] = {26,25,33,32,19,21,22,23}; // SENSORES DEL 0 AL 8 QTR8
+
+#define SDA_PIN 13
+#define SCL_PIN 15
 
 //MOTOR - Cualquier GPIO funciona
-#define MOTORI_AINA    25
+#define MOTORI_AINA    12
 #define MOTORI_AINB    27
 #define MOTORI_PWM     14
 
-#define MOTORD_AINA    5   
-#define MOTORD_AINB    18
+#define MOTORD_AINA    18   
+#define MOTORD_AINB    5
 #define MOTORD_PWM     16   
 
 
@@ -47,7 +54,7 @@ unsigned char sensorline_pins[NUM_SENSORS] = {15,26,33,32,19,22,21,23}; // SENSO
 #define NUMPIXELS       2 // Popular NeoPixel ring size
 Adafruit_NeoPixel pixels(NUMPIXELS, LED1, NEO_GRB + NEO_KHZ800);
 
-#define SW1            12
+#define SW1            39
 #define ON_RF          2
 
 #define TURBINA_PIN          4
@@ -101,10 +108,13 @@ void setup()
 {
   Serial.begin(115200);
 
+  Acc_Init(SDA_PIN, SCL_PIN);
+
+
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   pixels.clear(); // Set all pixel colors to 'off'
   
-  SerialBT.begin("ZOOMER");
+  SerialBT.begin("RACHBALCKII");
   
   pinMode(SW1,INPUT_PULLUP);
   
@@ -465,6 +475,7 @@ void Task1code(void *pvParameters)
   while(1)
   {
     Slinea.Leer_sensores();
+    //Acc_read();
     delay(1);
   }
 
