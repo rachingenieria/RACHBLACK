@@ -108,6 +108,10 @@ void slinea::Calibrar_Sensores(void)
               discriminate[x] = (blanco[x] + negro[x])/2; //DISCRIMINANTE FINAL
           }
        
+
+       sensores_valor[x][num_muestras] = sensorValuesp[x];  //valor de la muestra
+
+
        if(sensorValuesp[x] > sensorValues_max[x])
        {
           sensorValues_max[x] = sensorValuesp[x];
@@ -239,4 +243,126 @@ void slinea::Leer_sensores (void)
               pinMode(pins[x], OUTPUT);
               digitalWrite(pins[x], HIGH);
        }
+}
+
+void slinea::calculate_Discriminat(void) 
+{
+
+  for (int x = 0; x < NUM_SENSORS; x++) 
+        {
+            num_negros[x] = 0;
+            num_blancos[x] = 0;
+
+            suma_negros[x] = 0.0;
+            suma_blancos[x] = 0.0;
+
+            media_blancos[x] = 0.0;
+            media_negros[x] = 0.0;
+
+            var_blancos[x] = 0.0;
+            var_negros[x] = 0.0;
+        }
+
+  for (int n = 0; n < NUM_MUESTRAS; n++) 
+    {
+      for (int x = 0; x < NUM_SENSORS; x++) 
+        {
+          if(sensores_valor[x][n] < discriminate[x])
+          {
+                sensores_tipo[x][n] = 0; // blanco refleja
+                num_blancos[x] ++;
+                suma_blancos[x] += sensores_valor[x][n];
+          }
+          else
+          {
+                sensores_tipo[x][n] = 1; // negro no descarga
+                num_negros[x] ++;
+                suma_negros[x] += sensores_valor[x][n]; 
+          }
+        }
+    }
+
+    //calculo de media
+    for (int x = 0; x < NUM_SENSORS; x++) 
+        {
+          media_negros[x] = suma_negros[x]/ num_negros[x];
+          media_blancos[x] = suma_blancos[x]/ num_blancos[x];
+        }
+
+    //calculo de Varianza
+    for (int n = 0; n < NUM_MUESTRAS; n++) 
+    {
+      for (int x = 0; x < NUM_SENSORS; x++) 
+        {
+             if(sensores_tipo[x][n] == 0)
+             {
+              var_blancos[x] += pow(sensores_valor[x][n] - media_blancos[x], 2);
+             }
+
+            if(sensores_tipo[x][n] == 1)
+             {
+              var_negros[x] += pow(sensores_valor[x][n] - media_negros[x], 2);
+             }
+        }
+    }
+
+    for (int x = 0; x < NUM_SENSORS; x++) 
+    {
+      var_blancos[x] = var_blancos[x]/ num_blancos[x];
+      var_negros[x] = var_negros[x]/ num_negros[x];
+    }
+
+    //definir el umbral
+    for (int x = 0; x < NUM_SENSORS; x++) 
+    {
+      discriminate[x] = (media_blancos[x] + var_blancos[x]) + (media_negros[x] - var_negros[x])/2;
+    }
+}
+
+// Función para realizar el algoritmo K-Means
+void slinea::kMeansClustering(float data[], int dataSize, int numClusters) 
+{
+    float centroids[numClusters];
+    // Inicializar los centroides de manera aleatoria
+    for (int i = 0; i < numClusters; i++) {
+        centroids[i] = random(0, 1001);  // Valores entre 0 y 1000
+    }
+
+    // Iteraciones del algoritmo K-Means (puedes ajustar el número de iteraciones)
+    for (int iter = 0; iter < 100; iter++) {
+        // Asignar cada muestra al centroide más cercano
+        int clusterCounts[numClusters] = {0};
+        float clusterSums[numClusters] = {0.0};
+
+        for (int i = 0; i < dataSize; i++) {
+            float minDistance = 1000.0;
+            int closestCluster = -1;
+
+            for (int cluster = 0; cluster < numClusters; cluster++) {
+                float distance = abs(data[i] - centroids[cluster]);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestCluster = cluster;
+                }
+            }
+
+            clusterCounts[closestCluster]++;
+            clusterSums[closestCluster] += data[i];
+        }
+
+        // Actualizar los centroides
+        for (int cluster = 0; cluster < numClusters; cluster++) {
+            if (clusterCounts[cluster] > 0) {
+                centroids[cluster] = clusterSums[cluster] / clusterCounts[cluster];
+            }
+        }
+    }
+
+    // Imprimir los centroides finales encontrados por K-Means
+    for (int cluster = 0; cluster < numClusters; cluster++) {
+        Serial.print("Cluster ");
+        Serial.print(cluster);
+        Serial.print(" - Centroid: ");
+        Serial.println(centroids[cluster]);
+    }
 }

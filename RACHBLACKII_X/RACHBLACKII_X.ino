@@ -209,8 +209,12 @@ void setup()
       Slinea.Calibrar_Sensores();
       delay(1);
   }
-  vel.colorlinea = Slinea.Calibrar_Color_Linea();
+  
+  Slinea.calculate_Discriminat();
   Serial_Report_Calibration();
+
+  vel.colorlinea = Slinea.Calibrar_Color_Linea();
+
 
   Led_Control(150,0,0,150,0,0);
   motor.SetSpeeds(0, 0);

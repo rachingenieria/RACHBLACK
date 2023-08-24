@@ -3,7 +3,7 @@
 #define TIMEOUT                   1024
 
 #define MAX_VALUE                 1024
-#define NUM_MUESTRAS              2500
+#define NUM_MUESTRAS              1000
 
 //Sensores de Linea PD
 #define NUM_SENSORS             8  // Numero de sensores que usa
@@ -19,7 +19,10 @@ class slinea
     int Calibrar_Color_Linea(void);
     void Calibrar_Sensores(void);
     int Leer_linea(int linea_anterior, int colorlinea);
+    void calculate_Discriminat(void);
+    void kMeansClustering(float data[], int dataSize, int numClusters);
     
+
     int colorlinea;
     int position_line;
     int S[8];
@@ -35,6 +38,24 @@ class slinea
     int num_negro[NUM_SENSORS], num_blanco[NUM_SENSORS];
     unsigned int sensorValues_max[NUM_SENSORS];
     unsigned int sensorValues_min[NUM_SENSORS];
+
+    // Definir las muestras de las dos clases para 8 sensores y 1000 muestras cada una
+    int sensores_valor[NUM_SENSORS][NUM_MUESTRAS];  //valor de la muestra
+    int sensores_tipo[NUM_SENSORS][NUM_MUESTRAS];   //valor clasificacion de la muestra
+
+    int numSamples = NUM_MUESTRAS;  // Número de muestras
+
+    int num_negros[NUM_SENSORS];
+    int num_blancos[NUM_SENSORS];
+
+    float suma_negros[NUM_SENSORS];
+    float suma_blancos[NUM_SENSORS];
+
+    float media_blancos[NUM_SENSORS];
+    float media_negros[NUM_SENSORS];
+
+    float var_blancos[NUM_SENSORS];
+    float var_negros[NUM_SENSORS];
         
   private:
         //variables de control

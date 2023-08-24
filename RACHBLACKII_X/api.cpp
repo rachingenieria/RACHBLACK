@@ -223,6 +223,21 @@ void Serial_Report_Calibration(void)
         SerialBT.print(", sensorValues_min:");
         SerialBT.println(Slinea.sensorValues_min[x]);
      }
+
+ for(int x=0; x<NUM_SENSORS; x++)
+     {
+        SerialBT.print("media_blanco:");
+        SerialBT.print(Slinea.media_blancos[x]); 
+        SerialBT.print(", media_negros:"); 
+        SerialBT.print(Slinea.media_negros[x]); 
+        SerialBT.print(", var_blanco:"); 
+        SerialBT.print(Slinea.var_blancos[x]);
+        SerialBT.print(", var_negros:");
+        SerialBT.print(Slinea.var_negros[x]);
+        SerialBT.print(", fisherCoefficient:");
+        SerialBT.println(Slinea.discriminate[x]);
+        
+     }
   
  SerialBT.println(",");
 
