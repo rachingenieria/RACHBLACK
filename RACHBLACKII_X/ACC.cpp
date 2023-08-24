@@ -89,6 +89,7 @@ void Acc_read(void)
   mpu.getEvent(&a, &g, &temp);
 
   /* Print out the values */
+  /*
   Serial.print("Acceleration X: ");
   Serial.print(a.acceleration.x);
   Serial.print(", Y: ");
@@ -108,5 +109,5 @@ void Acc_read(void)
   Serial.print("Temperature: ");
   Serial.print(temp.temperature);
   Serial.println(" degC");
-
+ */
 }

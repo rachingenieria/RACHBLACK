@@ -208,8 +208,6 @@ void Serial_Report_Calibration(void)
      {
         SerialBT.print("discriminate:");
         SerialBT.print(Slinea.discriminate[x]); 
-        SerialBT.print(", sensorValuesp:"); 
-        SerialBT.print(Slinea.sensorValuesp[x]); 
         SerialBT.print(", negro:"); 
         SerialBT.print(Slinea.negro[x]);
         SerialBT.print(", blanco:");
@@ -226,19 +224,39 @@ void Serial_Report_Calibration(void)
 
  for(int x=0; x<NUM_SENSORS; x++)
      {
-        SerialBT.print("media_blanco:");
-        SerialBT.print(Slinea.media_blancos[x]); 
-        SerialBT.print(", media_negros:"); 
-        SerialBT.print(Slinea.media_negros[x]); 
-        SerialBT.print(", var_blanco:"); 
-        SerialBT.print(Slinea.var_blancos[x]);
-        SerialBT.print(", var_negros:");
-        SerialBT.print(Slinea.var_negros[x]);
-        SerialBT.print(", fisherCoefficient:");
-        SerialBT.println(Slinea.discriminate[x]);
+        SerialBT.print(" suma_clase:");
+        SerialBT.print(Slinea.suma_clase[x][0]); 
+        SerialBT.print(",");
+        SerialBT.print(Slinea.suma_clase[x][1]); 
+
+        SerialBT.print(" num_samples_per_class:");
+        SerialBT.print(Slinea.num_samples_per_class[x][0]); 
+        SerialBT.print(",");
+        SerialBT.print(Slinea.num_samples_per_class[x][1]); 
+
+        SerialBT.print(" media:");
+        SerialBT.print(Slinea.media[x][0]); 
+        SerialBT.print(",");
+        SerialBT.print(Slinea.media[x][1]); 
+
+
+        SerialBT.print(", scatter_between:"); 
+        SerialBT.print(Slinea.scatter_between[x]); 
+        SerialBT.print(", scatter_within:");
+        SerialBT.print(Slinea.scatter_within[x]);
+
+        SerialBT.print(", centroids:"); 
+        SerialBT.print(Slinea.centroides_Sensors[x][0]); 
+        SerialBT.print(",");
+        SerialBT.print(Slinea.centroides_Sensors[x][1]);
+
+        
+        SerialBT.print(", discriminate_LDA:");
+        SerialBT.println(Slinea.discriminate_LDA[x]);
         
      }
-  
+
+
  SerialBT.println(",");
 
 }

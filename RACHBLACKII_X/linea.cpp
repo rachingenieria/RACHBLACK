@@ -142,7 +142,6 @@ int slinea::Leer_linea(int linea_anterior, int colorlinea )
     sensores_b = 0;
     
     
-    
     for(int x=0; x<NUM_SENSORS; x++)
      {
         rango_comparacion = discriminate[x];
@@ -210,6 +209,12 @@ void slinea::Leer_sensores (void)
   int val;
   int sensorValuespaux[NUM_SENSORS];
   
+       for(int x=0; x<NUM_SENSORS; x++)
+       {
+              pinMode(pins[x], OUTPUT);
+              digitalWrite(pins[x], HIGH);
+       }
+
       for(int x=0; x<NUM_SENSORS; x++)
        {
               sensorValuespaux[x] = TIMEOUT;
@@ -226,7 +231,6 @@ void slinea::Leer_sensores (void)
                   val = digitalRead(pins[x]);
                   if( (val==LOW) && (sensorValuespaux[x] == TIMEOUT) )
                   {
-                    
                     sensorValuespaux[x]=sensor_time;
                   }
              }
@@ -236,105 +240,91 @@ void slinea::Leer_sensores (void)
      for(int x=0; x<NUM_SENSORS; x++)
              {
                   sensorValuesp[x]=sensorValuespaux[x];
-             }
-
-      for(int x=0; x<NUM_SENSORS; x++)
-       {
-              pinMode(pins[x], OUTPUT);
-              digitalWrite(pins[x], HIGH);
-       }
+             }     
 }
 
 void slinea::calculate_Discriminat(void) 
 {
-
   for (int x = 0; x < NUM_SENSORS; x++) 
+    {
+
+        suma_clase[x][0] = 0.0; // Suma de valores para cada clase
+        suma_clase[x][1] = 0.0; // Suma de valores para cada clase
+
+        num_samples_per_class[x][0] = 0; // Número de muestras por clase
+        num_samples_per_class[x][1] = 0; // Número de muestras por clase
+
+        media[x][0] = 0.0; // Media para cada clase
+        media[x][1] = 0.0; // Media para cada clase
+
+        scatter_between[x] = 0.0; // Scatter entre clases
+        scatter_within[x] = 0.0; // Scatter dentro de clases
+
+
+      for (int n = 0; n < NUM_MUESTRAS; n++) 
         {
-            num_negros[x] = 0;
-            num_blancos[x] = 0;
 
-            suma_negros[x] = 0.0;
-            suma_blancos[x] = 0.0;
+            if(sensores_valor[x][n] < discriminate[x])
+            {
+                  sensores_tipo[x][n] = 0; // blanco refleja
+            }
+            else
+            {
+                  sensores_tipo[x][n] = 1; // negro no descarga
+            }
 
-            media_blancos[x] = 0.0;
-            media_negros[x] = 0.0;
-
-            var_blancos[x] = 0.0;
-            var_negros[x] = 0.0;
         }
 
-  for (int n = 0; n < NUM_MUESTRAS; n++) 
-    {
-      for (int x = 0; x < NUM_SENSORS; x++) 
+        // Cálculos de medias y sumas por clase
+        for (int n = 0; n < NUM_MUESTRAS; n++) 
         {
-          if(sensores_valor[x][n] < discriminate[x])
-          {
-                sensores_tipo[x][n] = 0; // blanco refleja
-                num_blancos[x] ++;
-                suma_blancos[x] += sensores_valor[x][n];
-          }
-          else
-          {
-                sensores_tipo[x][n] = 1; // negro no descarga
-                num_negros[x] ++;
-                suma_negros[x] += sensores_valor[x][n]; 
-          }
-        }
-    }
-
-    //calculo de media
-    for (int x = 0; x < NUM_SENSORS; x++) 
-        {
-          media_negros[x] = suma_negros[x]/ num_negros[x];
-          media_blancos[x] = suma_blancos[x]/ num_blancos[x];
+          suma_clase[x][sensores_tipo[x][n]] += sensores_valor[x][n];
+          num_samples_per_class[x][sensores_tipo[x][n]]++;
         }
 
-    //calculo de Varianza
-    for (int n = 0; n < NUM_MUESTRAS; n++) 
-    {
-      for (int x = 0; x < NUM_SENSORS; x++) 
+        for (int c = 0; c < 2; c++) 
         {
-             if(sensores_tipo[x][n] == 0)
-             {
-              var_blancos[x] += pow(sensores_valor[x][n] - media_blancos[x], 2);
-             }
-
-            if(sensores_tipo[x][n] == 1)
-             {
-              var_negros[x] += pow(sensores_valor[x][n] - media_negros[x], 2);
-             }
+          media[x][c] = suma_clase[x][c] / num_samples_per_class[x][c];
         }
-    }
 
-    for (int x = 0; x < NUM_SENSORS; x++) 
-    {
-      var_blancos[x] = var_blancos[x]/ num_blancos[x];
-      var_negros[x] = var_negros[x]/ num_negros[x];
-    }
+        // Cálculo de Scatter Between y Scatter Within
+        for (int n = 0; n < NUM_MUESTRAS; n++) {
+          double diff = sensores_valor[x][n] - media[x][sensores_tipo[x][n]];
+          scatter_within[x] += diff * diff;
+        }
 
-    //definir el umbral
-    for (int x = 0; x < NUM_SENSORS; x++) 
-    {
-      discriminate[x] = (media_blancos[x] + var_blancos[x]) + (media_negros[x] - var_negros[x])/2;
+         scatter_between[x] = scatter_within[x] - scatter_within[x] / NUM_MUESTRAS;
+
+         centroides_Sensors[x][0] = 50;//media[x][0];
+         centroides_Sensors[x][1] = 200;//media[x][1];
+
+         kMeansClustering(&sensores_valor[x][0], NUM_MUESTRAS, 2, &centroides_Sensors[x][0]) ;
+
+        // Cálculo de discriminante (umbral)
+        discriminate_LDA[x] = scatter_within[x] / scatter_between[x];
+        discriminate[x] = (centroides_Sensors[x][0] + centroides_Sensors[x][1])/2;
     }
 }
 
 // Función para realizar el algoritmo K-Means
-void slinea::kMeansClustering(float data[], int dataSize, int numClusters) 
+void slinea::kMeansClustering(int* data, int dataSize, int numClusters, int* centroides) 
 {
     float centroids[numClusters];
     // Inicializar los centroides de manera aleatoria
     for (int i = 0; i < numClusters; i++) {
-        centroids[i] = random(0, 1001);  // Valores entre 0 y 1000
+        centroids[i] = centroides[i];  // Valores entre 0 y 1000
     }
 
+
     // Iteraciones del algoritmo K-Means (puedes ajustar el número de iteraciones)
-    for (int iter = 0; iter < 100; iter++) {
+    for (int iter = 0; iter < 100; iter++) 
+    {
         // Asignar cada muestra al centroide más cercano
         int clusterCounts[numClusters] = {0};
         float clusterSums[numClusters] = {0.0};
 
-        for (int i = 0; i < dataSize; i++) {
+        for (int i = 0; i < dataSize; i++) 
+        {
             float minDistance = 1000.0;
             int closestCluster = -1;
 
@@ -352,17 +342,16 @@ void slinea::kMeansClustering(float data[], int dataSize, int numClusters)
 
         // Actualizar los centroides
         for (int cluster = 0; cluster < numClusters; cluster++) {
-            if (clusterCounts[cluster] > 0) {
+            if (clusterCounts[cluster] > 0) 
+            {
                 centroids[cluster] = clusterSums[cluster] / clusterCounts[cluster];
             }
         }
     }
 
-    // Imprimir los centroides finales encontrados por K-Means
-    for (int cluster = 0; cluster < numClusters; cluster++) {
-        Serial.print("Cluster ");
-        Serial.print(cluster);
-        Serial.print(" - Centroid: ");
-        Serial.println(centroids[cluster]);
+    for (int i = 0; i < numClusters; i++) 
+    {
+        centroides[i] = centroids[i];  // Valores entre 0 y 1000
     }
+    
 }

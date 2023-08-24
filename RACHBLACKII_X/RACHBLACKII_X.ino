@@ -62,6 +62,7 @@ Adafruit_NeoPixel pixels(NUMPIXELS, LED1, NEO_GRB + NEO_KHZ800);
 void task_create(void);
 TaskHandle_t Task1;
 TaskHandle_t Task2;
+TaskHandle_t Task3;
 
 //------------------------------------------------------------------------------------//
 //PARAMETROS del Control del Velocista
@@ -123,6 +124,7 @@ void setup()
    
   Slinea.Asignacion_Pines(sensorline_pins,8);
   task_create_sensor(); //Leer Linea
+  task_create_reports();
 
   motor.Motor_Init(MOTORI_AINA,MOTORI_AINB,MOTORI_PWM,MOTORD_AINA,MOTORD_AINB,MOTORD_PWM);
   motor.SetSpeeds(0,0);
@@ -479,11 +481,6 @@ void Task2loop(void *pvParameters)
      motor.SetSpeeds(0, 0);
   }
   
-  //SERIAL STOP
-   Serial_command();
-   Serial_send_variables();
-
-   //delay(1);
   }
 
 }
@@ -493,11 +490,23 @@ void Task1code(void *pvParameters)
   while(1)
   {
     Slinea.Leer_sensores();
+    delay(1);
+  }
+
+}
+
+void Task3report(void *pvParameters)
+{ 
+  while(1)
+  {
+    Serial_command();
+    //Serial_send_variables();
     //Acc_read();
     delay(1);
   }
 
 }
+
 
 void task_create_sensor(void)
 {
@@ -509,9 +518,8 @@ void task_create_sensor(void)
                       NULL,        /* parameter of the task */
                       3,           /* priority of the task */
                       &Task1,      /* Task handle to keep track of created task */
-                      0);          /* pin task to core 0 */                  
+                      1);          /* pin task to core 0 */                  
 }
-
 
 void task_create_loop(void)
 {
@@ -522,6 +530,19 @@ void task_create_loop(void)
                       10000,       /* Stack size of task */
                       NULL,        /* parameter of the task */
                       3,           /* priority of the task */
-                      &Task1,      /* Task handle to keep track of created task */
+                      &Task2,      /* Task handle to keep track of created task */
                       1);          /* pin task to core 0 */                  
+}
+
+void task_create_reports(void)
+{
+  //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
+    xTaskCreatePinnedToCore(
+                      Task3report,   /* Task function. */
+                      "Task3",     /* name of task. */
+                      10000,       /* Stack size of task */
+                      NULL,        /* parameter of the task */
+                      3,           /* priority of the task */
+                      &Task3,      /* Task handle to keep track of created task */
+                      0);          /* pin task to core 0 */                  
 }

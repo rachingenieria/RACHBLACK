@@ -1,9 +1,9 @@
 #ifndef LINEA_h
 
-#define TIMEOUT                   1024
+#define TIMEOUT                   200
+#define MAX_VALUE                 528
 
-#define MAX_VALUE                 1024
-#define NUM_MUESTRAS              1000
+#define NUM_MUESTRAS              1024
 
 //Sensores de Linea PD
 #define NUM_SENSORS             8  // Numero de sensores que usa
@@ -20,13 +20,14 @@ class slinea
     void Calibrar_Sensores(void);
     int Leer_linea(int linea_anterior, int colorlinea);
     void calculate_Discriminat(void);
-    void kMeansClustering(float data[], int dataSize, int numClusters);
-    
+    void kMeansClustering(int* data, int dataSize, int numClusters, int* centroides) ;
 
+    
     int colorlinea;
     int position_line;
     int S[8];
     int discriminate[NUM_SENSORS];  
+    int discriminate_LDA[NUM_SENSORS]; 
     //int sensorValues[NUM_SENSORS];  
     int sensorValuesp[NUM_SENSORS];  
 
@@ -45,17 +46,15 @@ class slinea
 
     int numSamples = NUM_MUESTRAS;  // Número de muestras
 
-    int num_negros[NUM_SENSORS];
-    int num_blancos[NUM_SENSORS];
+      //calculo de media
+    double suma_clase[NUM_SENSORS][2]; // Suma de valores para cada clase
+    int num_samples_per_class[NUM_SENSORS][2] ; // Número de muestras por clase
+    double media[NUM_SENSORS][2]; // Media para cada clase
+    double scatter_between[NUM_SENSORS]; // Scatter entre clases
+    double scatter_within[NUM_SENSORS]; // Scatter dentro de clases
 
-    float suma_negros[NUM_SENSORS];
-    float suma_blancos[NUM_SENSORS];
+    int centroides_Sensors[NUM_SENSORS][2];
 
-    float media_blancos[NUM_SENSORS];
-    float media_negros[NUM_SENSORS];
-
-    float var_blancos[NUM_SENSORS];
-    float var_negros[NUM_SENSORS];
         
   private:
         //variables de control
