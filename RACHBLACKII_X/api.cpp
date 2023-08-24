@@ -170,8 +170,9 @@ void Serial_send_variables(void)
      SerialBT.print(",");
      SerialBT.print(Slinea.S[s]);
   }
-  SerialBT.print(",");
+  SerialBT.println(",");
 
+/*
   Serial.print("#");
   Serial.print(",");
   Serial.print(vel.vavg);
@@ -191,7 +192,38 @@ void Serial_send_variables(void)
      Serial.print(Slinea.S[s]);
   }
   Serial.println(",");
-
-  delay(2);
+*/
+  //delay(2);
   
+}
+
+void Serial_Report_Calibration(void)
+{
+
+ SerialBT.print("#");
+ SerialBT.print(",");
+ SerialBT.print(Slinea.num_muestras);
+
+ for(int x=0; x<NUM_SENSORS; x++)
+     {
+        SerialBT.print("discriminate:");
+        SerialBT.print(Slinea.discriminate[x]); 
+        SerialBT.print(", sensorValuesp:"); 
+        SerialBT.print(Slinea.sensorValuesp[x]); 
+        SerialBT.print(", negro:"); 
+        SerialBT.print(Slinea.negro[x]);
+        SerialBT.print(", blanco:");
+        SerialBT.print(Slinea.blanco[x]);
+        SerialBT.print(", num_negro:");
+        SerialBT.print(Slinea.num_negro[x]);
+        SerialBT.print(", num_blanco:");
+        SerialBT.print(Slinea.num_blanco[x]);
+        SerialBT.print(", sensorValues_max:");
+        SerialBT.print(Slinea.sensorValues_max[x]);
+        SerialBT.print(", sensorValues_min:");
+        SerialBT.println(Slinea.sensorValues_min[x]);
+     }
+  
+ SerialBT.println(",");
+
 }

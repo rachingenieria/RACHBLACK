@@ -122,7 +122,7 @@ void setup()
   digitalWrite(ON_RF, LOW); //PULL DOWN
    
   Slinea.Asignacion_Pines(sensorline_pins,8);
-  task_create(); //Leer Linea
+  task_create_sensor(); //Leer Linea
 
   motor.Motor_Init(MOTORI_AINA,MOTORI_AINB,MOTORI_PWM,MOTORD_AINA,MOTORD_AINB,MOTORD_PWM);
   motor.SetSpeeds(0,0);
@@ -146,7 +146,7 @@ void setup()
   int menuactivo = 0;
   
   // MENU DE CONFIGURACION
-  Serial_send_variables();
+  //Serial_send_variables();
 
   Led_Control(150,0,0,150,0,0);
   delay(500);
@@ -198,17 +198,20 @@ void setup()
 //-------------Instrucciones para Empezar a hacer la Calibracion de Sensores--------------------------------------//
   
   Slinea.Reset_Calibracion(); //ROBOT EN MEDIO DE LA LINEAS
-  vel.colorlinea = Slinea.Calibrar_Color_Linea();
+  
   Led_Control(0,0,150,0,0,150);
   
   //GIRA MIENTRA CALIBRA
-  motor.SetSpeeds(-15, 15);
+  motor.SetSpeeds(-25, 25);
   int tiempo_cal = NUM_MUESTRAS + 1;
   while(tiempo_cal--)
   {
       Slinea.Calibrar_Sensores();
-      delay(5);
+      delay(1);
   }
+  vel.colorlinea = Slinea.Calibrar_Color_Linea();
+  Serial_Report_Calibration();
+
   Led_Control(150,0,0,150,0,0);
   motor.SetSpeeds(0, 0);
 
@@ -272,7 +275,7 @@ void setup()
   val = digitalRead(SW1);  
   while (val == HIGH )
   {    
-     Serial_send_variables();
+     //Serial_send_variables();
      vel.position_line = Slinea.Leer_linea(vel.position_line ,vel.colorlinea); 
      delay(100);
      val = digitalRead(SW1); 
@@ -341,13 +344,25 @@ void setup()
 
    detect_recta_ant = 1;
    detect_recta = 1;
+
+  task_create_loop();
   
 }
  
 void loop()
 {
- 
-//APAGADO POR MODULO REMOTO
+   delay(10000);
+}
+
+/*--------------------------------------------------*/
+/*---------------------- Tasks ---------------------*/
+/*--------------------------------------------------*/
+
+void Task2loop(void *pvParameters)
+{ 
+  while(1)
+  {
+    //APAGADO POR MODULO REMOTO
    int rf_control = digitalRead(ON_RF);
    if (rf_control == 0 && stat_sw == 0)
    {
@@ -428,7 +443,7 @@ void loop()
     }
     
 
-
+      /*
       if(detect_recta == 0 && detect_recta_ant == 1) //CAmbio de Recta a curva
       {
            Led_Control(150,0,0,150,0,0); 
@@ -438,7 +453,7 @@ void loop()
            //delay(100); //tiempo proporcional a la longitud de la recta
            Led_Control(0,0,0,0,0,0); 
       }
-      
+      */
  
      //motor.SetSpeeds(vavg  - power_difference, vavg +  power_difference);
      if(power_difference > 0)
@@ -462,13 +477,12 @@ void loop()
   
   //SERIAL STOP
    Serial_command();
+   Serial_send_variables();
 
-   delay(1);
+   //delay(1);
+  }
+
 }
-
-/*--------------------------------------------------*/
-/*---------------------- Tasks ---------------------*/
-/*--------------------------------------------------*/
 
 void Task1code(void *pvParameters)
 { 
@@ -481,7 +495,7 @@ void Task1code(void *pvParameters)
 
 }
 
-void task_create(void)
+void task_create_sensor(void)
 {
   //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
     xTaskCreatePinnedToCore(
@@ -492,4 +506,18 @@ void task_create(void)
                       3,           /* priority of the task */
                       &Task1,      /* Task handle to keep track of created task */
                       0);          /* pin task to core 0 */                  
+}
+
+
+void task_create_loop(void)
+{
+  //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
+    xTaskCreatePinnedToCore(
+                      Task2loop,   /* Task function. */
+                      "Task2",     /* name of task. */
+                      10000,       /* Stack size of task */
+                      NULL,        /* parameter of the task */
+                      3,           /* priority of the task */
+                      &Task1,      /* Task handle to keep track of created task */
+                      1);          /* pin task to core 0 */                  
 }

@@ -1,9 +1,9 @@
 #ifndef LINEA_h
 
-#define TIMEOUT                   200
+#define TIMEOUT                   1024
 
 #define MAX_VALUE                 1024
-#define NUM_MUESTRAS              500
+#define NUM_MUESTRAS              2500
 
 //Sensores de Linea PD
 #define NUM_SENSORS             8  // Numero de sensores que usa
@@ -19,14 +19,22 @@ class slinea
     int Calibrar_Color_Linea(void);
     void Calibrar_Sensores(void);
     int Leer_linea(int linea_anterior, int colorlinea);
-
     
     int colorlinea;
     int position_line;
     int S[8];
     int discriminate[NUM_SENSORS];  
-    int sensorValues[NUM_SENSORS];  
+    //int sensorValues[NUM_SENSORS];  
     int sensorValuesp[NUM_SENSORS];  
+
+    int minimo_general = 1024;
+    int maximo_general = 0;
+    int num_muestras = 0;
+    int sensores_b;
+    int negro[NUM_SENSORS], blanco[NUM_SENSORS];
+    int num_negro[NUM_SENSORS], num_blanco[NUM_SENSORS];
+    unsigned int sensorValues_max[NUM_SENSORS];
+    unsigned int sensorValues_min[NUM_SENSORS];
         
   private:
         //variables de control
@@ -34,16 +42,6 @@ class slinea
         unsigned char pins[NUM_SENSORS];
         int pesos[NUM_SENSORS*2+2] = {-35,-20,-10,-5,5,10,20,35}; // SENSORES DEL 0 AL 8 QTR8
         
-        
-        unsigned int sensorValues_max[NUM_SENSORS];
-        unsigned int sensorValues_min[NUM_SENSORS];
-
-        int minimo_general = 1024;
-        int maximo_general = 0;
-        int num_muestras = 0;
-        int sensores_b;
-        int negro[NUM_SENSORS], blanco[NUM_SENSORS];
-        int num_negro[NUM_SENSORS], num_blanco[NUM_SENSORS];
 };
 
 #endif

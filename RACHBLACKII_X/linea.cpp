@@ -123,6 +123,7 @@ void slinea::Calibrar_Sensores(void)
     num_muestras ++;
 }
 
+
  
 int slinea::Leer_linea(int linea_anterior, int colorlinea )
 {   
