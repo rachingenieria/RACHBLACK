@@ -109,9 +109,6 @@ void setup()
 {
   Serial.begin(115200);
 
-  Acc_Init(SDA_PIN, SCL_PIN);
-
-
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   pixels.clear(); // Set all pixel colors to 'off'
   
@@ -124,7 +121,7 @@ void setup()
    
   Slinea.Asignacion_Pines(sensorline_pins,8);
   task_create_sensor(); //Leer Linea
-  task_create_reports();
+  //task_create_reports();
 
   motor.Motor_Init(MOTORI_AINA,MOTORI_AINB,MOTORI_PWM,MOTORD_AINA,MOTORD_AINB,MOTORD_PWM);
   motor.SetSpeeds(0,0);
@@ -148,7 +145,7 @@ void setup()
   int menuactivo = 0;
   
   // MENU DE CONFIGURACION
-  //Serial_send_variables();
+  Serial_send_variables();
 
   Led_Control(150,0,0,150,0,0);
   delay(500);
@@ -487,9 +484,17 @@ void Task2loop(void *pvParameters)
 
 void Task1code(void *pvParameters)
 { 
+   //Acc_Init(SDA_PIN, SCL_PIN);
+   //delay(5);
+   //calibrateSensors();
+   //delay(1);
+   //resetAndCalculate();
+
   while(1)
   {
+    Serial_command();
     Slinea.Leer_sensores();
+    //Acc_read();
     delay(1);
   }
 
@@ -497,12 +502,19 @@ void Task1code(void *pvParameters)
 
 void Task3report(void *pvParameters)
 { 
+   //Acc_Init(SDA_PIN, SCL_PIN);
+   //delay(5);
+   //calibrateSensors();
+   //delay(1);
+   //resetAndCalculate();
+
+   delay(200);
+
   while(1)
   {
-    Serial_command();
+     //Serial_IMU_variables();
     //Serial_send_variables();
-    //Acc_read();
-    delay(1);
+     delay(250);
   }
 
 }

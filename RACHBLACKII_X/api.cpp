@@ -5,6 +5,7 @@
 #include "linea.h"
 #include "flash.h"
 #include "api.h"
+#include "ACC.h"
 
 extern rachblack vel;
 extern slinea Slinea;
@@ -150,6 +151,56 @@ while (SerialBT.available()) {
     }
 }
 
+extern   float accelX[4];
+extern   float accelY[4];
+extern   float accelZ[4];
+extern   float gyroX[4];
+extern   float gyroY[4];
+extern   float gyroZ[4];
+
+extern float gyroXangle_grados;
+extern float gyroYangle_grados;
+extern float gyroZangle_grados;
+
+extern float velocityX;
+extern float velocityY;
+extern float displacementX;
+extern float displacementY;
+
+void Serial_IMU_variables(void)
+{
+  SerialBT.print("#");
+  SerialBT.print(gyroXangle_grados);
+  SerialBT.print(", ");
+  SerialBT.print(gyroYangle_grados);
+  SerialBT.print(",-,");
+  SerialBT.print(gyroZangle_grados);
+  SerialBT.print(",  -  ,");
+  SerialBT.print(velocityX);
+  SerialBT.print(", ");
+  SerialBT.print(velocityY);
+  SerialBT.print(",  -  ,");
+  SerialBT.print(displacementX);
+  SerialBT.print(", ");
+  SerialBT.print(displacementY);
+
+  SerialBT.print(" Acceleration X: ");
+  SerialBT.print(accelX[0]);
+  SerialBT.print(", Y: ");
+  SerialBT.print(accelY[0]);
+  SerialBT.print(", Z: ");
+  SerialBT.print(accelZ[0]);
+  SerialBT.print(" m/s^2");
+
+  SerialBT.print(" Rotation X: ");
+  SerialBT.print(gyroX[0]);
+  SerialBT.print(", Y: ");
+  SerialBT.print(gyroY[0]);
+  SerialBT.print(", Z: ");
+  SerialBT.print(gyroZ[0]);
+  SerialBT.println(" rad/s");
+}
+
 void Serial_send_variables(void)
 {
   SerialBT.print("#");
@@ -165,6 +216,7 @@ void Serial_send_variables(void)
   SerialBT.print(vel.colorlinea);
   SerialBT.print(",");
   SerialBT.print(vel.position_line);
+  
   for(int s=0; s<8; s++)
   {
      SerialBT.print(",");
