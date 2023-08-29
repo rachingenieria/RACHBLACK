@@ -220,6 +220,7 @@ void setup()
 
   val = digitalRead(SW1);  
   vel.position_line = 60;
+
   
   while (val == HIGH )
           {
@@ -278,7 +279,7 @@ void setup()
   val = digitalRead(SW1);  
   while (val == HIGH )
   {    
-     //Serial_send_variables();
+     Serial_send_variables();
      vel.position_line = Slinea.Leer_linea(vel.position_line ,vel.colorlinea); 
      delay(100);
      val = digitalRead(SW1); 
@@ -477,6 +478,8 @@ void Task2loop(void *pvParameters)
   {
      motor.SetSpeeds(0, 0);
   }
+
+    Serial_command();
   
   }
 
@@ -492,7 +495,7 @@ void Task1code(void *pvParameters)
 
   while(1)
   {
-    Serial_command();
+    
     Slinea.Leer_sensores();
     //Acc_read();
     delay(1);
@@ -530,7 +533,7 @@ void task_create_sensor(void)
                       NULL,        /* parameter of the task */
                       3,           /* priority of the task */
                       &Task1,      /* Task handle to keep track of created task */
-                      1);          /* pin task to core 0 */                  
+                      0);          /* pin task to core 0 */                  
 }
 
 void task_create_loop(void)
