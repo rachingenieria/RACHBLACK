@@ -6,6 +6,7 @@
 #include "flash.h"
 #include "api.h"
 
+
 extern rachblack vel;
 extern slinea Slinea;
 extern BluetoothSerial SerialBT;
@@ -165,13 +166,15 @@ void Serial_send_variables(void)
   SerialBT.print(vel.colorlinea);
   SerialBT.print(",");
   SerialBT.print(vel.position_line);
+  
   for(int s=0; s<8; s++)
   {
      SerialBT.print(",");
      SerialBT.print(Slinea.S[s]);
   }
-  SerialBT.print(",");
+  SerialBT.println(",");
 
+/*
   Serial.print("#");
   Serial.print(",");
   Serial.print(vel.vavg);
@@ -191,7 +194,71 @@ void Serial_send_variables(void)
      Serial.print(Slinea.S[s]);
   }
   Serial.println(",");
-
-  delay(2);
+*/
+  //delay(2);
   
+}
+
+void Serial_Report_Calibration(void)
+{
+
+ SerialBT.print("#");
+ SerialBT.print(",");
+ SerialBT.print(Slinea.num_muestras);
+
+ for(int x=0; x<NUM_SENSORS; x++)
+     {
+        SerialBT.print("discriminate:");
+        SerialBT.print(Slinea.discriminate[x]); 
+        SerialBT.print(", negro:"); 
+        SerialBT.print(Slinea.negro[x]);
+        SerialBT.print(", blanco:");
+        SerialBT.print(Slinea.blanco[x]);
+        SerialBT.print(", num_negro:");
+        SerialBT.print(Slinea.num_negro[x]);
+        SerialBT.print(", num_blanco:");
+        SerialBT.print(Slinea.num_blanco[x]);
+        SerialBT.print(", sensorValues_max:");
+        SerialBT.print(Slinea.sensorValues_max[x]);
+        SerialBT.print(", sensorValues_min:");
+        SerialBT.println(Slinea.sensorValues_min[x]);
+     }
+
+ for(int x=0; x<NUM_SENSORS; x++)
+     {
+        SerialBT.print(" suma_clase:");
+        SerialBT.print(Slinea.suma_clase[x][0]); 
+        SerialBT.print(",");
+        SerialBT.print(Slinea.suma_clase[x][1]); 
+
+        SerialBT.print(" num_samples_per_class:");
+        SerialBT.print(Slinea.num_samples_per_class[x][0]); 
+        SerialBT.print(",");
+        SerialBT.print(Slinea.num_samples_per_class[x][1]); 
+
+        SerialBT.print(" media:");
+        SerialBT.print(Slinea.media[x][0]); 
+        SerialBT.print(",");
+        SerialBT.print(Slinea.media[x][1]); 
+
+
+        SerialBT.print(", scatter_between:"); 
+        SerialBT.print(Slinea.scatter_between[x]); 
+        SerialBT.print(", scatter_within:");
+        SerialBT.print(Slinea.scatter_within[x]);
+
+        SerialBT.print(", centroids:"); 
+        SerialBT.print(Slinea.centroides_Sensors[x][0]); 
+        SerialBT.print(",");
+        SerialBT.print(Slinea.centroides_Sensors[x][1]);
+
+        
+        SerialBT.print(", discriminate_LDA:");
+        SerialBT.println(Slinea.discriminate_LDA[x]);
+        
+     }
+
+
+ SerialBT.println(",");
+
 }

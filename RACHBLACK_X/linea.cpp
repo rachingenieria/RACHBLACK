@@ -108,6 +108,10 @@ void slinea::Calibrar_Sensores(void)
               discriminate[x] = (blanco[x] + negro[x])/2; //DISCRIMINANTE FINAL
           }
        
+
+       sensores_valor[x][num_muestras] = sensorValuesp[x];  //valor de la muestra
+
+
        if(sensorValuesp[x] > sensorValues_max[x])
        {
           sensorValues_max[x] = sensorValuesp[x];
@@ -123,6 +127,7 @@ void slinea::Calibrar_Sensores(void)
     num_muestras ++;
 }
 
+
  
 int slinea::Leer_linea(int linea_anterior, int colorlinea )
 {   
@@ -135,7 +140,6 @@ int slinea::Leer_linea(int linea_anterior, int colorlinea )
     linea = 0;
     activos = 0;
     sensores_b = 0;
-    
     
     
     for(int x=0; x<NUM_SENSORS; x++)
@@ -180,16 +184,18 @@ int slinea::Leer_linea(int linea_anterior, int colorlinea )
      else
      {
          
-          if(linea_anterior > 15)
+          if(linea_anterior >= 10)
           {
             linea = 45;
           }
-          else if(linea_anterior < -15)
+          else if(linea_anterior <= -10)
           {
             linea = -45;
           }
           else
-          {linea = 0;}
+          {
+            linea = 0;
+            }
      
      }
      return linea;
@@ -203,6 +209,12 @@ void slinea::Leer_sensores (void)
   int val;
   int sensorValuespaux[NUM_SENSORS];
   
+       for(int x=0; x<NUM_SENSORS; x++)
+       {
+              pinMode(pins[x], OUTPUT);
+              digitalWrite(pins[x], HIGH);
+       }
+
       for(int x=0; x<NUM_SENSORS; x++)
        {
               sensorValuespaux[x] = TIMEOUT;
@@ -219,7 +231,6 @@ void slinea::Leer_sensores (void)
                   val = digitalRead(pins[x]);
                   if( (val==LOW) && (sensorValuespaux[x] == TIMEOUT) )
                   {
-                    
                     sensorValuespaux[x]=sensor_time;
                   }
              }
@@ -229,11 +240,118 @@ void slinea::Leer_sensores (void)
      for(int x=0; x<NUM_SENSORS; x++)
              {
                   sensorValuesp[x]=sensorValuespaux[x];
-             }
+             }     
+}
 
-      for(int x=0; x<NUM_SENSORS; x++)
-       {
-              pinMode(pins[x], OUTPUT);
-              digitalWrite(pins[x], HIGH);
-       }
+void slinea::calculate_Discriminat(void) 
+{
+  for (int x = 0; x < NUM_SENSORS; x++) 
+    {
+
+        suma_clase[x][0] = 0.0; // Suma de valores para cada clase
+        suma_clase[x][1] = 0.0; // Suma de valores para cada clase
+
+        num_samples_per_class[x][0] = 0; // Número de muestras por clase
+        num_samples_per_class[x][1] = 0; // Número de muestras por clase
+
+        media[x][0] = 0.0; // Media para cada clase
+        media[x][1] = 0.0; // Media para cada clase
+
+        scatter_between[x] = 0.0; // Scatter entre clases
+        scatter_within[x] = 0.0; // Scatter dentro de clases
+
+
+      for (int n = 0; n < NUM_MUESTRAS; n++) 
+        {
+
+            if(sensores_valor[x][n] < discriminate[x])
+            {
+                  sensores_tipo[x][n] = 0; // blanco refleja
+            }
+            else
+            {
+                  sensores_tipo[x][n] = 1; // negro no descarga
+            }
+
+        }
+
+        // Cálculos de medias y sumas por clase
+        for (int n = 0; n < NUM_MUESTRAS; n++) 
+        {
+          suma_clase[x][sensores_tipo[x][n]] += sensores_valor[x][n];
+          num_samples_per_class[x][sensores_tipo[x][n]]++;
+        }
+
+        for (int c = 0; c < 2; c++) 
+        {
+          media[x][c] = suma_clase[x][c] / num_samples_per_class[x][c];
+        }
+
+        // Cálculo de Scatter Between y Scatter Within
+        for (int n = 0; n < NUM_MUESTRAS; n++) {
+          double diff = sensores_valor[x][n] - media[x][sensores_tipo[x][n]];
+          scatter_within[x] += diff * diff;
+        }
+
+         scatter_between[x] = scatter_within[x] - scatter_within[x] / NUM_MUESTRAS;
+
+         centroides_Sensors[x][0] = 50;//media[x][0];
+         centroides_Sensors[x][1] = 200;//media[x][1];
+
+         kMeansClustering(&sensores_valor[x][0], NUM_MUESTRAS, 2, &centroides_Sensors[x][0]) ;
+
+        // Cálculo de discriminante (umbral)
+        discriminate_LDA[x] = scatter_within[x] / scatter_between[x];
+        discriminate[x] = (centroides_Sensors[x][0] + centroides_Sensors[x][1])/2;
+    }
+}
+
+// Función para realizar el algoritmo K-Means
+void slinea::kMeansClustering(int* data, int dataSize, int numClusters, int* centroides) 
+{
+    float centroids[numClusters];
+    // Inicializar los centroides de manera aleatoria
+    for (int i = 0; i < numClusters; i++) {
+        centroids[i] = centroides[i];  // Valores entre 0 y 1000
+    }
+
+
+    // Iteraciones del algoritmo K-Means (puedes ajustar el número de iteraciones)
+    for (int iter = 0; iter < 100; iter++) 
+    {
+        // Asignar cada muestra al centroide más cercano
+        int clusterCounts[numClusters] = {0};
+        float clusterSums[numClusters] = {0.0};
+
+        for (int i = 0; i < dataSize; i++) 
+        {
+            float minDistance = 1000.0;
+            int closestCluster = -1;
+
+            for (int cluster = 0; cluster < numClusters; cluster++) {
+                float distance = abs(data[i] - centroids[cluster]);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestCluster = cluster;
+                }
+            }
+
+            clusterCounts[closestCluster]++;
+            clusterSums[closestCluster] += data[i];
+        }
+
+        // Actualizar los centroides
+        for (int cluster = 0; cluster < numClusters; cluster++) {
+            if (clusterCounts[cluster] > 0) 
+            {
+                centroids[cluster] = clusterSums[cluster] / clusterCounts[cluster];
+            }
+        }
+    }
+
+    for (int i = 0; i < numClusters; i++) 
+    {
+        centroides[i] = centroids[i];  // Valores entre 0 y 1000
+    }
+    
 }

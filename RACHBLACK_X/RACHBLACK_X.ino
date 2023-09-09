@@ -55,6 +55,7 @@ Adafruit_NeoPixel pixels(NUMPIXELS, LED1, NEO_GRB + NEO_KHZ800);
 void task_create(void);
 TaskHandle_t Task1;
 TaskHandle_t Task2;
+TaskHandle_t Task3;
 
 //------------------------------------------------------------------------------------//
 //PARAMETROS del Control del Velocista
@@ -104,7 +105,7 @@ void setup()
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   pixels.clear(); // Set all pixel colors to 'off'
   
-  SerialBT.begin("ZOOMER");
+  SerialBT.begin("THOR");
   
   pinMode(SW1,INPUT_PULLUP);
   
@@ -112,7 +113,8 @@ void setup()
   digitalWrite(ON_RF, LOW); //PULL DOWN
    
   Slinea.Asignacion_Pines(sensorline_pins,8);
-  task_create(); //Leer Linea
+  task_create_sensor(); //Leer Linea
+  //task_create_reports();
 
   motor.Motor_Init(MOTORI_AINA,MOTORI_AINB,MOTORI_PWM,MOTORD_AINA,MOTORD_AINB,MOTORD_PWM);
   motor.SetSpeeds(0,0);
@@ -188,22 +190,30 @@ void setup()
 //-------------Instrucciones para Empezar a hacer la Calibracion de Sensores--------------------------------------//
   
   Slinea.Reset_Calibracion(); //ROBOT EN MEDIO DE LA LINEAS
-  vel.colorlinea = Slinea.Calibrar_Color_Linea();
+  
   Led_Control(0,0,150,0,0,150);
   
   //GIRA MIENTRA CALIBRA
-  motor.SetSpeeds(-15, 15);
+  motor.SetSpeeds(-25, 25);
   int tiempo_cal = NUM_MUESTRAS + 1;
   while(tiempo_cal--)
   {
       Slinea.Calibrar_Sensores();
-      delay(5);
+      delay(1);
   }
+  
+  Slinea.calculate_Discriminat();
+  Serial_Report_Calibration();
+
+  vel.colorlinea = Slinea.Calibrar_Color_Linea();
+
+
   Led_Control(150,0,0,150,0,0);
   motor.SetSpeeds(0, 0);
 
   val = digitalRead(SW1);  
   vel.position_line = 60;
+
   
   while (val == HIGH )
           {
@@ -331,13 +341,25 @@ void setup()
 
    detect_recta_ant = 1;
    detect_recta = 1;
+
+  task_create_loop();
   
 }
  
 void loop()
 {
- 
-//APAGADO POR MODULO REMOTO
+   delay(10000);
+}
+
+/*--------------------------------------------------*/
+/*---------------------- Tasks ---------------------*/
+/*--------------------------------------------------*/
+
+void Task2loop(void *pvParameters)
+{ 
+  while(1)
+  {
+    //APAGADO POR MODULO REMOTO
    int rf_control = digitalRead(ON_RF);
    if (rf_control == 0 && stat_sw == 0)
    {
@@ -418,7 +440,7 @@ void loop()
     }
     
 
-
+      /*
       if(detect_recta == 0 && detect_recta_ant == 1) //CAmbio de Recta a curva
       {
            Led_Control(150,0,0,150,0,0); 
@@ -428,7 +450,7 @@ void loop()
            //delay(100); //tiempo proporcional a la longitud de la recta
            Led_Control(0,0,0,0,0,0); 
       }
-      
+      */
  
      //motor.SetSpeeds(vavg  - power_difference, vavg +  power_difference);
      if(power_difference > 0)
@@ -449,28 +471,52 @@ void loop()
   {
      motor.SetSpeeds(0, 0);
   }
+
+    Serial_command();
   
-  //SERIAL STOP
-   Serial_command();
+  }
 
-   delay(1);
 }
-
-/*--------------------------------------------------*/
-/*---------------------- Tasks ---------------------*/
-/*--------------------------------------------------*/
 
 void Task1code(void *pvParameters)
 { 
+   //Acc_Init(SDA_PIN, SCL_PIN);
+   //delay(5);
+   //calibrateSensors();
+   //delay(1);
+   //resetAndCalculate();
+
   while(1)
   {
+    
     Slinea.Leer_sensores();
+    //Acc_read();
     delay(1);
   }
 
 }
 
-void task_create(void)
+void Task3report(void *pvParameters)
+{ 
+   //Acc_Init(SDA_PIN, SCL_PIN);
+   //delay(5);
+   //calibrateSensors();
+   //delay(1);
+   //resetAndCalculate();
+
+   delay(200);
+
+  while(1)
+  {
+     //Serial_IMU_variables();
+    //Serial_send_variables();
+     delay(250);
+  }
+
+}
+
+
+void task_create_sensor(void)
 {
   //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
     xTaskCreatePinnedToCore(
@@ -480,5 +526,31 @@ void task_create(void)
                       NULL,        /* parameter of the task */
                       3,           /* priority of the task */
                       &Task1,      /* Task handle to keep track of created task */
+                      0);          /* pin task to core 0 */                  
+}
+
+void task_create_loop(void)
+{
+  //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
+    xTaskCreatePinnedToCore(
+                      Task2loop,   /* Task function. */
+                      "Task2",     /* name of task. */
+                      10000,       /* Stack size of task */
+                      NULL,        /* parameter of the task */
+                      3,           /* priority of the task */
+                      &Task2,      /* Task handle to keep track of created task */
+                      1);          /* pin task to core 0 */                  
+}
+
+void task_create_reports(void)
+{
+  //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
+    xTaskCreatePinnedToCore(
+                      Task3report,   /* Task function. */
+                      "Task3",     /* name of task. */
+                      10000,       /* Stack size of task */
+                      NULL,        /* parameter of the task */
+                      3,           /* priority of the task */
+                      &Task3,      /* Task handle to keep track of created task */
                       0);          /* pin task to core 0 */                  
 }
