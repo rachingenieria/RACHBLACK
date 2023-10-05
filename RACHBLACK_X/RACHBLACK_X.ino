@@ -1,3 +1,6 @@
+
+#include <Arduino.h>
+#include "stdlib.h"
 #include <Adafruit_NeoPixel.h>
 
 #include "BluetoothSerial.h"
@@ -25,6 +28,9 @@ rachblack vel;
 Motores motor;
 slinea Slinea;
 BluetoothSerial SerialBT;
+
+hw_timer_t * timer = NULL;
+portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 //------------------------------------------------------------------------------------//
 //Asignacion de Pines de conexion
 
@@ -52,10 +58,15 @@ Adafruit_NeoPixel pixels(NUMPIXELS, LED1, NEO_GRB + NEO_KHZ800);
 
 #define TURBINA_PIN          4
 
-void task_create(void);
+void task_create_sensor(void);
+void task_create_loop(void);
+void task_create_reports(void);
+
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 TaskHandle_t Task3;
+
+
 
 //------------------------------------------------------------------------------------//
 //PARAMETROS del Control del Velocista
@@ -73,9 +84,7 @@ int   PISTACOLOR             = 0;
 
 int val;
 int error[BUFFER_ERROR];
-float power_difference, power_difference_ext;
-float power_difference_ant;
-
+float power_difference;
 
 int detect_recta_ant, detect_recta;
 char stat_sw = 0; 
@@ -84,12 +93,20 @@ int recta_tamano = 0;
 int recta_tamano_ultimo = 0;
 
 int flag_turbina = 0;
+int carrera = 0;
 //------------------------------------------------------------------------------------//
 
-// Define two tasks for Blink & AnalogRead.
-void TaskBlink( void *pvParameters );
-void TaskAnalogRead( void *pvParameters );
-TaskHandle_t analog_read_task_handle; // You can (don't have to) use this to be able to manipulate a task from somewhere else.
+void ARDUINO_ISR_ATTR onTimer()
+{
+  portENTER_CRITICAL_ISR(&timerMux);
+  Slinea.Leer_sensores();
+    if(carrera)
+    {
+      Controlloop();
+    }
+  portEXIT_CRITICAL_ISR(&timerMux);
+
+}
 
 void Led_Control(int ledIR,int ledIG,int ledIB,int ledDR,int ledDG,int ledDB)
 {
@@ -100,6 +117,7 @@ void Led_Control(int ledIR,int ledIG,int ledIB,int ledDR,int ledDG,int ledDB)
 
 void setup() 
 {
+  carrera = 0;
   Serial.begin(115200);
 
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
@@ -113,8 +131,16 @@ void setup()
   digitalWrite(ON_RF, LOW); //PULL DOWN
    
   Slinea.Asignacion_Pines(sensorline_pins,8);
-  task_create_sensor(); //Leer Linea
-  //task_create_reports();
+
+
+  //OPCION POR TAREA O POR INTERRUPCION
+  //task_create_sensor(); //Leer Linea
+
+  timer = timerBegin(3, 80, true); //80 -- Micro secons
+  timerAttachInterrupt(timer, &onTimer, true);
+  timerAlarmWrite(timer, 1000, true); //500 - 1/0.001 = 1K
+  timerAlarmEnable(timer);
+
 
   motor.Motor_Init(MOTORI_AINA,MOTORI_AINB,MOTORI_PWM,MOTORD_AINA,MOTORD_AINB,MOTORD_PWM);
   motor.SetSpeeds(0,0);
@@ -194,7 +220,7 @@ void setup()
   Led_Control(0,0,150,0,0,150);
   
   //GIRA MIENTRA CALIBRA
-  motor.SetSpeeds(-25, 25);
+  motor.SetSpeeds(-15, 15);
   int tiempo_cal = NUM_MUESTRAS + 1;
   while(tiempo_cal--)
   {
@@ -203,7 +229,7 @@ void setup()
   }
   
   Slinea.calculate_Discriminat();
-  Serial_Report_Calibration();
+  //Serial_Report_Calibration();
 
   vel.colorlinea = Slinea.Calibrar_Color_Linea();
 
@@ -247,7 +273,16 @@ void setup()
                 float kpg = (float) vel.kpg/10.0;
                 float kdg = (float) vel.kdg/10.0;
 
-                power_difference = (error[0] * kpg) + ((error[0] - error[4]) * kdg);
+                power_difference = (error[0] * kpg) + ((error[0] - error[5]) * kdg);
+
+                if(power_difference > 15)
+                  power_difference = 15;
+
+                if(power_difference < -15)
+                  power_difference = -15;
+                
+
+
                 motor.SetSpeeds( - power_difference,  power_difference);
               
                 delay(1);
@@ -341,24 +376,36 @@ void setup()
 
    detect_recta_ant = 1;
    detect_recta = 1;
-
-  task_create_loop();
-  
+   carrera = 1;
+   Serial.printf("Inicio Carrera\n");
+ 
 }
  
 void loop()
 {
-   delay(10000);
+   if(carrera)
+    {
+             //led para curva
+       if (vel.position_line < -20)
+        {
+           Led_Control(0,0,0,150,0,0); 
+        }
+        else  if (vel.position_line > 20 )
+        {
+           Led_Control(150,0,0,0,0,0);   
+        }
+
+      Serial_command();
+    }
+     delay(10);
 }
 
 /*--------------------------------------------------*/
 /*---------------------- Tasks ---------------------*/
 /*--------------------------------------------------*/
 
-void Task2loop(void *pvParameters)
+void Controlloop(void)
 { 
-  while(1)
-  {
     //APAGADO POR MODULO REMOTO
    int rf_control = digitalRead(ON_RF);
    if (rf_control == 0 && stat_sw == 0)
@@ -384,113 +431,57 @@ void Task2loop(void *pvParameters)
   {
     vel.position_line = Slinea.Leer_linea(vel.position_line ,vel.colorlinea); // leemos posicion de la linea en la variable position
 
-       /*
-       //led para curva
-       if (vel.position_line < -20)
-       {
-           digitalWrite(LED2, LOW);
-           digitalWrite(LED1, HIGH); 
-        }
-        else  if (vel.position_line > 20 )
-        {
-           digitalWrite(LED2, HIGH);
-           digitalWrite(LED1, LOW);    
-        }
-      */
-
-   
    //Valores anteriores
-    for(int ind = BUFFER_ERROR-1; ind > 0 ; ind --)
-    {
-      error[ind] = error[ind-1];
-    }
-     error[0] = vel.position_line;
-    
+    error[5]=error[4];
+    error[4]=error[3];
+    error[3]=error[2];
+    error[2]=error[1];
+    error[1]=error[0];
+    error[0]=vel.position_line;
 
     int vavg= vel.vavg;
-    float kpg = (float) vel.kpg/10.0;
-    float kdg = (float) vel.kdg/10.0;
-
-    power_difference = (error[0] * kpg) + ((error[0] - error[5]) * kdg);
-
-    //Calculo de Recta  
-    int suma_recta = 0;
-    int sensor_curva = 0;
+    int kpg = (int) vel.kpg;
+    int kdg = (int) vel.kdg;
     
-    detect_recta_ant = detect_recta;
-    detect_recta = 0;
-   
-     for(int i=0 ; i<BUFFER_ERROR; i++)
-      {
-        suma_recta = error[i];
-        if( error[i] > 20 || error[i] < -20)
-        {
-          sensor_curva = 1;
-        }
-      }
+    int power_difference_aux = (error[0] * kpg) + ((error[0] - error[5]) * kdg);
+    power_difference_aux = power_difference_aux/10;
 
-    suma_recta = suma_recta/BUFFER_ERROR;
-
-    if(sensor_curva == 0)
-    {
-      if(abs(suma_recta) < 8)
-      {
-        detect_recta = 1;
-      }
-    }
-    
-
-      /*
-      if(detect_recta == 0 && detect_recta_ant == 1) //CAmbio de Recta a curva
-      {
-           Led_Control(150,0,0,150,0,0); 
-           motor.SetSpeeds(-50,-50); //Freno
-           delay(5); //tiempo proporcional a la longitud de la recta
-           //motor.SetSpeeds(vavg,vavg); //Freno
-           //delay(100); //tiempo proporcional a la longitud de la recta
-           Led_Control(0,0,0,0,0,0); 
-      }
-      */
- 
+    //Serial.printf("%d\n",power_difference_aux);
+      
      //motor.SetSpeeds(vavg  - power_difference, vavg +  power_difference);
-     if(power_difference > 0)
+     if(power_difference_aux > 0)
      {
-       motor.SetSpeeds(vavg  - power_difference,  vavg );
+       motor.SetSpeeds(vavg  - power_difference_aux,  vavg );
      }
-     else if(power_difference < 0)
+     else if(power_difference_aux < 0)
      {
-        motor.SetSpeeds(vavg, vavg +  power_difference);
+        motor.SetSpeeds(vavg, vavg +  power_difference_aux);
 
      }
      else
      {
        motor.SetSpeeds(vavg,vavg);
      }
+     
   }
   else
   {
      motor.SetSpeeds(0, 0);
   }
-
-    Serial_command();
-  
-  }
-
 }
+
 
 void Task1code(void *pvParameters)
 { 
-   //Acc_Init(SDA_PIN, SCL_PIN);
-   //delay(5);
-   //calibrateSensors();
-   //delay(1);
-   //resetAndCalculate();
 
   while(1)
   {
-    
+    //Serial_command();
     Slinea.Leer_sensores();
-    //Acc_read();
+    if(carrera)
+    {
+      Controlloop();
+    }
     delay(1);
   }
 
@@ -510,6 +501,10 @@ void Task3report(void *pvParameters)
   {
      //Serial_IMU_variables();
     //Serial_send_variables();
+    if(carrera)
+    {
+      //Serial_command();
+    }
      delay(250);
   }
 
@@ -533,7 +528,7 @@ void task_create_loop(void)
 {
   //create a task that will be executed in the Task1code() function, with priority 1 and executed on core 0
     xTaskCreatePinnedToCore(
-                      Task2loop,   /* Task function. */
+                      Task3report,   /* Task function. */
                       "Task2",     /* name of task. */
                       10000,       /* Stack size of task */
                       NULL,        /* parameter of the task */
@@ -552,5 +547,5 @@ void task_create_reports(void)
                       NULL,        /* parameter of the task */
                       3,           /* priority of the task */
                       &Task3,      /* Task handle to keep track of created task */
-                      0);          /* pin task to core 0 */                  
+                      1);          /* pin task to core 0 */                  
 }
