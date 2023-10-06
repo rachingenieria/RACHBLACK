@@ -1,5 +1,4 @@
 #include <arduino.h>
-
 #include "linea.h"
 
 extern slinea Slinea;
@@ -19,6 +18,7 @@ void slinea::Asignacion_Pines(unsigned char* sensors_pins, int sensor_num)
 
 void slinea::Reset_Calibracion(void)
 {
+  num_muestras = 0;
    for(int x=0; x<NUM_SENSORS; x++)
    {
      sensorValues_max[x] = 0; 
@@ -28,47 +28,24 @@ void slinea::Reset_Calibracion(void)
      blanco[x]= 0;
      num_negro[x]= 0;
      num_blanco[x]= 0;
-     num_muestras = 0;
    }
 }
 
 
 int slinea::Calibrar_Color_Linea(void)
 {  
-   int color_fondo = 4;
-
-   Calibrar_Sensores ();
-
-    for(int x=0; x<NUM_SENSORS; x++)
-    {
-      if(minimo_general > sensorValues_min[x])
-          minimo_general = sensorValues_min[x];
-
-      if(maximo_general < sensorValues_max[x])
-          maximo_general = sensorValues_max[x];
-    }
-   
-   int rango_comparacion = (maximo_general + minimo_general)/2; //RANGO TEMPORAL
-   
-  int timeuot_fondo = 10;
-
- while(color_fondo == 4 && timeuot_fondo--)
- {
-     //Leer_sensores ();
-     delay(500);
-     //Leer_sensores ();
+     int color_fondo = 0;
      
     //fondo NEGRO - LINEA BLANCA
-    if(sensorValuesp[0] > rango_comparacion && sensorValuesp[NUM_SENSORS-1] > rango_comparacion  )
+    if(num_negro[4] > num_blanco[4])
     {
       color_fondo = 1;
     }
      //fondo BLANCO - LINEA NEGRA 
-    if(sensorValuesp[0] < rango_comparacion && sensorValuesp[NUM_SENSORS-1] < rango_comparacion  )
+    if(num_blanco[4] > num_negro[4])
     {
       color_fondo = 0;
     }
- }
      
 return color_fondo;
 }
@@ -81,36 +58,8 @@ void slinea::Calibrar_Sensores(void)
  
     for(int x=0; x<NUM_SENSORS; x++)
      {
-         if(num_muestras == NUM_MUESTRAS/2)
-         {
-             discriminate[x] = (sensorValues_max[x] + sensorValues_min[x])/2; //DISCRIMINANTE TEMPORAL
-         }
-
-         if(num_muestras > NUM_MUESTRAS/2)
-         {
-           if(sensorValuesp[x] < discriminate[x])
-             {
-                    blanco[x] += sensorValuesp[x];
-                    num_blanco[x] ++;
-             }
-             if(sensorValuesp[x]> discriminate[x])
-             {
-                    negro[x] += sensorValuesp[x];
-                    num_negro[x] ++;
-             }
-          }
-
-          if(num_muestras == NUM_MUESTRAS -1 && num_blanco[x] && num_negro[x])
-          {
-              blanco[x] =  blanco[x]/num_blanco[x]; //MEDIA BLANCOS
-              negro[x]  =  negro[x]/num_negro[x];   //MEDIA NEGROS
-
-              discriminate[x] = (blanco[x] + negro[x])/2; //DISCRIMINANTE FINAL
-          }
-       
 
        sensores_valor[x][num_muestras] = sensorValuesp[x];  //valor de la muestra
-
 
        if(sensorValuesp[x] > sensorValues_max[x])
        {
@@ -121,6 +70,33 @@ void slinea::Calibrar_Sensores(void)
        {
           sensorValues_min[x] = sensorValuesp[x];
        }
+
+      if(num_muestras == NUM_MUESTRAS/2)
+        {
+            discriminate[x] = (sensorValues_max[x] + sensorValues_min[x])/2; //DISCRIMINANTE TEMPORAL
+        }
+
+        if(num_muestras > NUM_MUESTRAS/2)
+        {
+          if(sensorValuesp[x] < discriminate[x])
+            {
+                  blanco[x] += sensorValuesp[x];
+                  num_blanco[x] ++;
+            }
+            if(sensorValuesp[x]> discriminate[x])
+            {
+                  negro[x] += sensorValuesp[x];
+                  num_negro[x] ++;
+            }
+        }
+
+        if(num_muestras == NUM_MUESTRAS -1 && num_blanco[x] && num_negro[x])
+        {
+            blanco[x] =  blanco[x]/num_blanco[x]; //MEDIA BLANCOS
+            negro[x]  =  negro[x]/num_negro[x];   //MEDIA NEGROS
+
+            discriminate[x] = (blanco[x] + negro[x])/2; //DISCRIMINANTE FINAL
+        }
        
      }
 
@@ -238,9 +214,9 @@ void slinea::Leer_sensores (void)
      }while(sensor_time < TIMEOUT); 
 
      for(int x=0; x<NUM_SENSORS; x++)
-             {
-                  sensorValuesp[x]=sensorValuespaux[x];
-             }     
+      {
+          sensorValuesp[x]=sensorValuespaux[x];
+      }     
 }
 
 void slinea::calculate_Discriminat(void) 

@@ -412,7 +412,11 @@ void Controlloop(void)
    {
        motor.SetSpeeds(0, 0);
        Turbina_set( 0);
-       while(1)
+       
+       carrera = 0;
+       vel.start = 0;
+
+       //while(1)
        {
           Led_Control(0,0,0,150,0,0);
           delay(500);

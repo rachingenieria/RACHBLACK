@@ -60,7 +60,7 @@ class slinea
         //variables de control
         int sensor_num;
         unsigned char pins[NUM_SENSORS];
-        int pesos[NUM_SENSORS*2+2] = {-35,-20,-10,-5,5,10,20,35}; // SENSORES DEL 0 AL 8 QTR8
+        int pesos[NUM_SENSORS] = {-35,-20,-10,-5,5,10,20,35}; // SENSORES DEL 0 AL 8 QTR8
         
 };
 
